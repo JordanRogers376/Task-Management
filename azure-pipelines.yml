@@ -1,0 +1,36 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  buildConfiguration: Release
+  dotnetVersion: '9.0.x'
+
+steps:
+  - task: UseDotNet@2
+    displayName: Install .NET SDK
+    inputs:
+      packageType: sdk
+      version: $(dotnetVersion)
+
+  - script: dotnet restore TaskManagement.sln
+    displayName: Restore
+
+  - script: dotnet build TaskManagement.sln --configuration $(buildConfiguration) --no-restore
+    displayName: Build
+
+  - script: dotnet test TaskManagement.sln --configuration $(buildConfiguration) --no-build --verbosity normal
+    displayName: Test
+
+  - script: dotnet publish src/TaskManagement.Api/TaskManagement.Api.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/api
+    displayName: Publish API
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish artifacts
+    inputs:
+      PathtoPublish: $(Build.ArtifactStagingDirectory)
+      ArtifactName: drop
