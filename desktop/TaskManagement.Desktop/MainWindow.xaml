@@ -7,23 +7,18 @@
         MinHeight="480"
         MinWidth="720">
     <Grid Margin="24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-
-        <StackPanel x:Name="LoginPanel">
+        <StackPanel Visibility="{Binding IsLoggedIn, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}">
             <TextBlock Text="Task Management" FontSize="28" FontWeight="Bold" Margin="0,0,0,8"/>
             <TextBlock Text="Sign in to view your tenant tasks" Foreground="#64748B" Margin="0,0,0,20"/>
-            <TextBlock Text="Email"/>
-            <TextBox x:Name="EmailBox" Margin="0,4,0,12" Text="admin@acme.com"/>
+            <TextBlock Text="Username"/>
+            <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,12"/>
             <TextBlock Text="Password"/>
             <PasswordBox x:Name="PasswordBox" Margin="0,4,0,12"/>
-            <TextBlock x:Name="LoginErrorText" Foreground="#DC2626" TextWrapping="Wrap" Margin="0,0,0,8"/>
-            <Button Content="Sign in" Padding="12,8" Click="LoginButton_Click"/>
+            <TextBlock Text="{Binding LoginError}" Foreground="#DC2626" TextWrapping="Wrap" Margin="0,0,0,8"/>
+            <Button Content="Sign in" Padding="12,8" Command="{Binding LoginCommand}"/>
         </StackPanel>
 
-        <Grid x:Name="TasksPanel" Visibility="Collapsed" Grid.Row="1">
+        <Grid Visibility="{Binding IsLoggedIn, Converter={StaticResource BoolToVisibilityConverter}}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -32,30 +27,30 @@
 
             <DockPanel Margin="0,0,0,16">
                 <StackPanel DockPanel.Dock="Left">
-                    <TextBlock x:Name="TenantNameText" FontSize="22" FontWeight="Bold"/>
-                    <TextBlock x:Name="UserInfoText" Foreground="#64748B"/>
+                    <TextBlock Text="{Binding TenantName}" FontSize="22" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding UserInfo}" Foreground="#64748B"/>
                 </StackPanel>
-                <Button Content="Refresh" DockPanel.Dock="Right" Padding="12,8" Margin="8,0,0,0" Click="RefreshButton_Click"/>
-                <Button Content="Sign out" DockPanel.Dock="Right" Padding="12,8" Click="SignOutButton_Click"/>
+                <Button Content="Refresh" DockPanel.Dock="Right" Padding="12,8" Margin="8,0,0,0" Command="{Binding RefreshCommand}"/>
+                <Button Content="Sign out" DockPanel.Dock="Right" Padding="12,8" Command="{Binding SignOutCommand}"/>
             </DockPanel>
 
-            <DataGrid x:Name="TasksGrid"
-                      Grid.Row="1"
+            <DataGrid Grid.Row="1"
+                      ItemsSource="{Binding Tasks}"
+                      SelectedItem="{Binding SelectedTask}"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
                       CanUserAddRows="False"
-                      SelectionMode="Single"
-                      HeadersVisibility="Column">
+                      SelectionMode="Single">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="*"/>
-                    <DataGridTextColumn Header="Created By" Binding="{Binding CreatedByEmail}" Width="160"/>
+                    <DataGridTextColumn Header="Assigned To" Binding="{Binding AssignedUsername}" Width="160"/>
                     <DataGridCheckBoxColumn Header="Done" Binding="{Binding IsCompleted}" Width="60"/>
                 </DataGrid.Columns>
             </DataGrid>
 
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-                <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="#64748B" Margin="0,0,12,0"/>
-                <Button x:Name="CompleteButton" Content="Mark complete" Padding="12,8" Click="CompleteButton_Click"/>
+                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" Foreground="#64748B" Margin="0,0,12,0"/>
+                <Button Content="Mark complete" Padding="12,8" Command="{Binding CompleteCommand}"/>
             </StackPanel>
         </Grid>
     </Grid>

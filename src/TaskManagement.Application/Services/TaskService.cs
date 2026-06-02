@@ -1,3 +1,4 @@
+using AutoMapper;
 using TaskManagement.Application.DTOs;
 using TaskManagement.Application.Exceptions;
 using TaskManagement.Application.Interfaces;
@@ -10,57 +11,66 @@ namespace TaskManagement.Application.Services;
 public class TaskService
 {
     private readonly ITaskRepository _taskRepository;
+    private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUser;
+    private readonly IMapper _mapper;
 
-    public TaskService(ITaskRepository taskRepository, ICurrentUserService currentUser)
+    public TaskService(
+        ITaskRepository taskRepository,
+        IUserRepository userRepository,
+        ICurrentUserService currentUser,
+        IMapper mapper)
     {
         _taskRepository = taskRepository;
+        _userRepository = userRepository;
         _currentUser = currentUser;
+        _mapper = mapper;
     }
 
-    public async Task<IReadOnlyList<TaskDto>> GetTasksAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<TaskDto>> GetTasksForTenantAsync(CancellationToken cancellationToken = default)
     {
         var tasks = await _taskRepository.GetByTenantAsync(_currentUser.TenantId, cancellationToken);
-        return tasks.Select(MapToDto).ToList();
-    }
-
-    public async Task<IReadOnlyList<TaskSummaryDto>> GetTaskSummariesAsync(CancellationToken cancellationToken = default)
-    {
-        var summaries = await _taskRepository.GetTaskSummariesByTenantAsync(_currentUser.TenantId, cancellationToken);
-        return summaries.Select(s => new TaskSummaryDto(
-            s.Id, s.Title, s.IsCompleted, s.CreatedAt, s.CompletedAt, s.CreatedByEmail)).ToList();
+        return tasks.Select(t => _mapper.Map<TaskDto>(t)).ToList();
     }
 
     public async Task<TaskDto> GetTaskAsync(Guid taskId, CancellationToken cancellationToken = default)
     {
         var task = await GetTaskForTenantAsync(taskId, cancellationToken);
-        return MapToDto(task);
+        return _mapper.Map<TaskDto>(task);
     }
 
     public async Task<TaskDto> CreateTaskAsync(CreateTaskRequest request, CancellationToken cancellationToken = default)
     {
+        var assignedUserId = request.AssignedUserId ?? _currentUser.UserId;
+        await EnsureAssigneeInTenantAsync(assignedUserId, cancellationToken);
+
         var task = new TaskItem
         {
             Id = Guid.NewGuid(),
             TenantId = _currentUser.TenantId,
-            CreatedByUserId = _currentUser.UserId,
+            AssignedUserId = assignedUserId,
             Title = request.Title.Trim(),
             Description = request.Description?.Trim(),
             IsCompleted = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedDate = DateTime.UtcNow
         };
 
         await _taskRepository.AddAsync(task, cancellationToken);
         await _taskRepository.SaveChangesAsync(cancellationToken);
 
         var created = await _taskRepository.GetByIdAsync(_currentUser.TenantId, task.Id, cancellationToken);
-        return MapToDto(created!);
+        return _mapper.Map<TaskDto>(created!);
     }
 
     public async Task<TaskDto> UpdateTaskAsync(Guid taskId, UpdateTaskRequest request, CancellationToken cancellationToken = default)
     {
         var task = await GetTaskForTenantAsync(taskId, cancellationToken);
-        EnsureCanModify(task);
+
+        if (request.AssignedUserId.HasValue)
+        {
+            await EnsureAssigneeInTenantAsync(request.AssignedUserId.Value, cancellationToken);
+            task.AssignedUserId = request.AssignedUserId.Value;
+        }
 
         task.Title = request.Title.Trim();
         task.Description = request.Description?.Trim();
@@ -68,12 +78,13 @@ public class TaskService
         await _taskRepository.SaveChangesAsync(cancellationToken);
 
         var updated = await _taskRepository.GetByIdAsync(_currentUser.TenantId, taskId, cancellationToken);
-        return MapToDto(updated!);
+        return _mapper.Map<TaskDto>(updated!);
     }
 
     public async Task<TaskDto> CompleteTaskAsync(Guid taskId, CancellationToken cancellationToken = default)
     {
         var task = await GetTaskForTenantAsync(taskId, cancellationToken);
+        EnsureCanComplete(task);
 
         if (!task.IsCompleted)
         {
@@ -84,14 +95,11 @@ public class TaskService
         }
 
         var updated = await _taskRepository.GetByIdAsync(_currentUser.TenantId, taskId, cancellationToken);
-        return MapToDto(updated!);
+        return _mapper.Map<TaskDto>(updated!);
     }
 
     public async Task DeleteTaskAsync(Guid taskId, CancellationToken cancellationToken = default)
     {
-        if (_currentUser.Role != UserRole.Admin)
-            throw new ForbiddenException("Only administrators can delete tasks.");
-
         var task = await GetTaskForTenantAsync(taskId, cancellationToken);
         _taskRepository.Remove(task);
         await _taskRepository.SaveChangesAsync(cancellationToken);
@@ -105,21 +113,19 @@ public class TaskService
         return task;
     }
 
-    private void EnsureCanModify(TaskItem task)
+    private void EnsureCanComplete(TaskItem task)
     {
         if (_currentUser.Role == UserRole.Admin)
             return;
 
-        if (task.CreatedByUserId != _currentUser.UserId)
-            throw new ForbiddenException("You can only edit tasks you created.");
+        if (task.AssignedUserId != _currentUser.UserId)
+            throw new ForbiddenException("You can only complete tasks assigned to you.");
     }
 
-    private static TaskDto MapToDto(TaskItem task) => new(
-        task.Id,
-        task.Title,
-        task.Description,
-        task.IsCompleted,
-        task.CreatedAt,
-        task.CompletedAt,
-        task.CreatedBy?.Email ?? string.Empty);
+    private async Task EnsureAssigneeInTenantAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user is null || user.TenantId != _currentUser.TenantId)
+            throw new NotFoundException("Assigned user was not found in your tenant.");
+    }
 }

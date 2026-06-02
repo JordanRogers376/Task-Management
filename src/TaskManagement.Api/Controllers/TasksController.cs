@@ -28,17 +28,14 @@ public class TasksController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<TaskDto>>> GetTasks(CancellationToken cancellationToken) =>
-        Ok(await _taskService.GetTasksAsync(cancellationToken));
-
-    [HttpGet("summaries")]
-    public async Task<ActionResult<IReadOnlyList<TaskSummaryDto>>> GetSummaries(CancellationToken cancellationToken) =>
-        Ok(await _taskService.GetTaskSummariesAsync(cancellationToken));
+        Ok(await _taskService.GetTasksForTenantAsync(cancellationToken));
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<TaskDto>> GetTask(Guid id, CancellationToken cancellationToken) =>
         Ok(await _taskService.GetTaskAsync(id, cancellationToken));
 
     [HttpPost]
+    [Authorize(Roles = UserRole.Admin)]
     public async Task<ActionResult<TaskDto>> CreateTask(
         [FromBody] CreateTaskRequest request,
         CancellationToken cancellationToken)
@@ -49,6 +46,7 @@ public class TasksController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = UserRole.Admin)]
     public async Task<ActionResult<TaskDto>> UpdateTask(
         Guid id,
         [FromBody] UpdateTaskRequest request,
@@ -58,7 +56,7 @@ public class TasksController : ControllerBase
         return Ok(await _taskService.UpdateTaskAsync(id, request, cancellationToken));
     }
 
-    [HttpPost("{id:guid}/complete")]
+    [HttpPatch("{id:guid}/complete")]
     public async Task<ActionResult<TaskDto>> CompleteTask(Guid id, CancellationToken cancellationToken) =>
         Ok(await _taskService.CompleteTaskAsync(id, cancellationToken));
 

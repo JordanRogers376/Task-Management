@@ -9,7 +9,6 @@ type AuthState = {
 }
 
 const AuthContext = createContext<AuthState | null>(null)
-
 const storageKey = 'taskmgmt.auth'
 
 function loadStored(): { token: string; user: AuthState['user'] } | null {

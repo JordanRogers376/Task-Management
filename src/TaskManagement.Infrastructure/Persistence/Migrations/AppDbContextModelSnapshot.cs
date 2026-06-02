@@ -23,13 +23,13 @@ namespace TaskManagement.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid>("AssignedUserId")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("CreatedByUserId")
+                    b.Property<DateTime>("CreatedDate")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
@@ -49,7 +49,7 @@ namespace TaskManagement.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedByUserId");
+                    b.HasIndex("AssignedUserId");
 
                     b.HasIndex("TenantId", "IsCompleted");
 
@@ -83,14 +83,6 @@ namespace TaskManagement.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -103,48 +95,26 @@ namespace TaskManagement.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Email")
-                        .IsUnique();
-
                     b.HasIndex("TenantId");
+
+                    b.HasIndex("Username")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("TaskManagement.Infrastructure.Persistence.TaskSummaryRow", b =>
-                {
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CreatedByEmail")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("Id")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsCompleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.ToTable((string)null);
-
-                    b.ToView(null, (string)null);
-                });
-
             modelBuilder.Entity("TaskManagement.Domain.Entities.TaskItem", b =>
                 {
-                    b.HasOne("TaskManagement.Domain.Entities.User", "CreatedBy")
-                        .WithMany("CreatedTasks")
-                        .HasForeignKey("CreatedByUserId")
+                    b.HasOne("TaskManagement.Domain.Entities.User", "AssignedUser")
+                        .WithMany("AssignedTasks")
+                        .HasForeignKey("AssignedUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -154,7 +124,7 @@ namespace TaskManagement.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("CreatedBy");
+                    b.Navigation("AssignedUser");
 
                     b.Navigation("Tenant");
                 });
@@ -179,7 +149,7 @@ namespace TaskManagement.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("TaskManagement.Domain.Entities.User", b =>
                 {
-                    b.Navigation("CreatedTasks");
+                    b.Navigation("AssignedTasks");
                 });
 #pragma warning restore 612, 618
         }

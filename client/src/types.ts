@@ -1,7 +1,7 @@
 export type LoginResponse = {
   token: string
   expiresAt: string
-  email: string
+  username: string
   role: string
   tenantId: string
   tenantName: string
@@ -12,17 +12,26 @@ export type Task = {
   title: string
   description: string | null
   isCompleted: boolean
-  createdAt: string
+  createdDate: string
   completedAt: string | null
-  createdByEmail: string
+  assignedUserId: string
+  assignedUsername: string
+}
+
+export type DashboardSummary = {
+  totalTasks: number
+  completedTasks: number
+  pendingTasks: number
 }
 
 export type CreateTaskRequest = {
   title: string
   description?: string | null
+  assignedUserId?: string | null
 }
 
 export type UpdateTaskRequest = {
   title: string
   description?: string | null
+  assignedUserId?: string | null
 }

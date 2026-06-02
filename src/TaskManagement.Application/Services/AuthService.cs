@@ -23,16 +23,16 @@ public class AuthService
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
-        var user = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
+        var user = await _userRepository.GetByUsernameAsync(request.Username, cancellationToken);
         if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
-            throw new UnauthorizedException("Invalid email or password.");
+            throw new UnauthorizedException("Invalid username or password.");
 
         var (token, expiresAt) = _tokenService.GenerateToken(user, user.Tenant.Name);
 
         return new LoginResponse(
             token,
             expiresAt,
-            user.Email,
+            user.Username,
             user.Role,
             user.TenantId,
             user.Tenant.Name);

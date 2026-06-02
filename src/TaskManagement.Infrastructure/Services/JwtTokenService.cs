@@ -23,7 +23,7 @@ public class JwtTokenService : ITokenService
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.Email, user.Email),
+            new("username", user.Username),
             new(ClaimTypes.Role, user.Role),
             new("tenant_id", user.TenantId.ToString()),
             new("tenant_name", tenantName)

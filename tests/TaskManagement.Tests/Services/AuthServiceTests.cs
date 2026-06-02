@@ -26,13 +26,13 @@ public class AuthServiceTests
         {
             Id = Guid.NewGuid(),
             TenantId = Guid.NewGuid(),
-            Email = "admin@acme.com",
+            Username = "admin@acme.com",
             PasswordHash = "hash",
             Role = UserRole.Admin,
             Tenant = new Tenant { Name = "Acme Corp" }
         };
 
-        _userRepository.Setup(r => r.GetByEmailAsync("admin@acme.com", It.IsAny<CancellationToken>()))
+        _userRepository.Setup(r => r.GetByUsernameAsync("admin@acme.com", It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
         _passwordHasher.Setup(p => p.Verify("Password123!", "hash")).Returns(true);
         _tokenService.Setup(t => t.GenerateToken(user, "Acme Corp"))
@@ -50,12 +50,12 @@ public class AuthServiceTests
     {
         var user = new User
         {
-            Email = "admin@acme.com",
+            Username = "admin@acme.com",
             PasswordHash = "hash",
             Tenant = new Tenant { Name = "Acme" }
         };
 
-        _userRepository.Setup(r => r.GetByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _userRepository.Setup(r => r.GetByUsernameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
         _passwordHasher.Setup(p => p.Verify(It.IsAny<string>(), It.IsAny<string>())).Returns(false);
 

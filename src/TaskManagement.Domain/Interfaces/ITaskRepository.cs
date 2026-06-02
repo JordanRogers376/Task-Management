@@ -10,13 +10,7 @@ public interface ITaskRepository
     void Update(TaskItem task);
     void Remove(TaskItem task);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<TaskSummary>> GetTaskSummariesByTenantAsync(Guid tenantId, CancellationToken cancellationToken = default);
+    Task<TenantTaskSummary> GetTenantTaskSummaryAsync(Guid tenantId, CancellationToken cancellationToken = default);
 }
 
-public record TaskSummary(
-    Guid Id,
-    string Title,
-    bool IsCompleted,
-    DateTime CreatedAt,
-    DateTime? CompletedAt,
-    string CreatedByEmail);
+public record TenantTaskSummary(int TotalTasks, int CompletedTasks, int PendingTasks);

@@ -14,14 +14,14 @@ public class TaskRepository : ITaskRepository
     public async Task<IReadOnlyList<TaskItem>> GetByTenantAsync(Guid tenantId, CancellationToken cancellationToken = default) =>
         await _context.Tasks
             .AsNoTracking()
-            .Include(t => t.CreatedBy)
+            .Include(t => t.AssignedUser)
             .Where(t => t.TenantId == tenantId)
-            .OrderByDescending(t => t.CreatedAt)
+            .OrderByDescending(t => t.CreatedDate)
             .ToListAsync(cancellationToken);
 
     public async Task<TaskItem?> GetByIdAsync(Guid tenantId, Guid taskId, CancellationToken cancellationToken = default) =>
         await _context.Tasks
-            .Include(t => t.CreatedBy)
+            .Include(t => t.AssignedUser)
             .FirstOrDefaultAsync(t => t.TenantId == tenantId && t.Id == taskId, cancellationToken);
 
     public async Task AddAsync(TaskItem task, CancellationToken cancellationToken = default) =>
@@ -34,35 +34,15 @@ public class TaskRepository : ITaskRepository
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         _context.SaveChangesAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<TaskSummary>> GetTaskSummariesByTenantAsync(
+    public async Task<TenantTaskSummary> GetTenantTaskSummaryAsync(
         Guid tenantId,
         CancellationToken cancellationToken = default)
     {
-        const string sql = """
-            SELECT
-                t.Id,
-                t.Title,
-                t.IsCompleted,
-                t.CreatedAt,
-                t.CompletedAt,
-                u.Email AS CreatedByEmail
-            FROM Tasks t
-            INNER JOIN Users u ON t.CreatedByUserId = u.Id
-            WHERE t.TenantId = {0}
-            ORDER BY t.IsCompleted ASC, t.CreatedAt DESC
-            """;
+        var query = _context.Tasks.AsNoTracking().Where(t => t.TenantId == tenantId);
 
-        var rows = await _context.Set<TaskSummaryRow>()
-            .FromSqlRaw(sql, tenantId)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
+        var total = await query.CountAsync(cancellationToken);
+        var completed = await query.CountAsync(t => t.IsCompleted, cancellationToken);
 
-        return rows.Select(r => new TaskSummary(
-            r.Id,
-            r.Title,
-            r.IsCompleted,
-            r.CreatedAt,
-            r.CompletedAt,
-            r.CreatedByEmail)).ToList();
+        return new TenantTaskSummary(total, completed, total - completed);
     }
 }

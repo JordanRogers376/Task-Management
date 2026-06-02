@@ -11,10 +11,10 @@ public class UserRepository : IUserRepository
 
     public UserRepository(AppDbContext context) => _context = context;
 
-    public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
+    public async Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default) =>
         await _context.Users
             .Include(u => u.Tenant)
-            .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant(), cancellationToken);
+            .FirstOrDefaultAsync(u => u.Username == username.Trim().ToLowerInvariant(), cancellationToken);
 
     public async Task<User?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default) =>
         await _context.Users

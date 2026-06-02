@@ -13,25 +13,21 @@ public class ApiClient
     };
 
     private readonly HttpClient _httpClient;
-    private string? _token;
 
     public ApiClient(string baseUrl)
     {
         _httpClient = new HttpClient { BaseAddress = new Uri(baseUrl) };
     }
 
-    public bool IsAuthenticated => !string.IsNullOrEmpty(_token);
-
-    public async Task<LoginResponse> LoginAsync(string email, string password, CancellationToken cancellationToken = default)
+    public async Task<LoginResponse> LoginAsync(string username, string password, CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.PostAsJsonAsync("api/auth/login", new { email, password }, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync("api/auth/login", new { username, password }, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
 
         var login = await response.Content.ReadFromJsonAsync<LoginResponse>(JsonOptions, cancellationToken)
             ?? throw new InvalidOperationException("Empty login response.");
 
-        _token = login.Token;
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", login.Token);
         return login;
     }
 
@@ -39,13 +35,13 @@ public class ApiClient
     {
         var response = await _httpClient.GetAsync("api/tasks", cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
-        return await response.Content.ReadFromJsonAsync<List<TaskDto>>(JsonOptions, cancellationToken)
-               ?? [];
+        return await response.Content.ReadFromJsonAsync<List<TaskDto>>(JsonOptions, cancellationToken) ?? [];
     }
 
     public async Task<TaskDto> CompleteTaskAsync(Guid taskId, CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.PostAsync($"api/tasks/{taskId}/complete", null, cancellationToken);
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"api/tasks/{taskId}/complete");
+        var response = await _httpClient.SendAsync(request, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
         return await response.Content.ReadFromJsonAsync<TaskDto>(JsonOptions, cancellationToken)
                ?? throw new InvalidOperationException("Empty task response.");
@@ -74,7 +70,7 @@ public class ApiClient
     public record LoginResponse(
         string Token,
         DateTime ExpiresAt,
-        string Email,
+        string Username,
         string Role,
         Guid TenantId,
         string TenantName);
@@ -84,9 +80,10 @@ public class ApiClient
         string Title,
         string? Description,
         bool IsCompleted,
-        DateTime CreatedAt,
+        DateTime CreatedDate,
         DateTime? CompletedAt,
-        string CreatedByEmail);
+        Guid AssignedUserId,
+        string AssignedUsername);
 
     private record ErrorResponse(string Error);
 }

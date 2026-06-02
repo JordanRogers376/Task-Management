@@ -1,15 +1,19 @@
-import type { CreateTaskRequest, LoginResponse, Task, UpdateTaskRequest } from '../types'
+import type { CreateTaskRequest, DashboardSummary, LoginResponse, Task, UpdateTaskRequest } from '../types'
 import { apiFetch } from './client'
 
-export function login(email: string, password: string) {
+export function login(username: string, password: string) {
   return apiFetch<LoginResponse>('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ username, password }),
   })
 }
 
 export function getTasks(token: string) {
   return apiFetch<Task[]>('/api/tasks', {}, token)
+}
+
+export function getDashboardSummary(token: string) {
+  return apiFetch<DashboardSummary>('/api/dashboard/summary', {}, token)
 }
 
 export function createTask(token: string, request: CreateTaskRequest) {
@@ -27,7 +31,7 @@ export function updateTask(token: string, id: string, request: UpdateTaskRequest
 }
 
 export function completeTask(token: string, id: string) {
-  return apiFetch<Task>(`/api/tasks/${id}/complete`, { method: 'POST' }, token)
+  return apiFetch<Task>(`/api/tasks/${id}/complete`, { method: 'PATCH' }, token)
 }
 
 export function deleteTask(token: string, id: string) {

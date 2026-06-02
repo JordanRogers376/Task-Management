@@ -5,18 +5,13 @@ public record TaskDto(
     string Title,
     string? Description,
     bool IsCompleted,
-    DateTime CreatedAt,
+    DateTime CreatedDate,
     DateTime? CompletedAt,
-    string CreatedByEmail);
+    Guid AssignedUserId,
+    string AssignedUsername);
 
-public record CreateTaskRequest(string Title, string? Description);
+public record CreateTaskRequest(string Title, string? Description, Guid? AssignedUserId);
 
-public record UpdateTaskRequest(string Title, string? Description);
+public record UpdateTaskRequest(string Title, string? Description, Guid? AssignedUserId);
 
-public record TaskSummaryDto(
-    Guid Id,
-    string Title,
-    bool IsCompleted,
-    DateTime CreatedAt,
-    DateTime? CompletedAt,
-    string CreatedByEmail);
+public record DashboardSummaryDto(int TotalTasks, int CompletedTasks, int PendingTasks);
